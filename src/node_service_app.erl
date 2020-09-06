@@ -1,7 +1,7 @@
 %% Author: uabjle
 %% Created: 10 dec 2012
 %% Description: TODO: Add description to application_org
--module(iaas_service_app).
+-module(node_service_app).
 
 -behaviour(application). 
 %% --------------------------------------------------------------------
@@ -45,7 +45,7 @@
 %% --------------------------------------------------------------------
 start(_Type, _StartArgs) ->
     Args=[],
-    {ok,Pid}= iaas_service_sup:start_link(Args),
+    {ok,Pid}= node_service_sup:start_link(Args),
     {ok,Pid}.
 %% --------------------------------------------------------------------
 %% Func: stop/1

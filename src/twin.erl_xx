@@ -1,0 +1,43 @@
+%%% -------------------------------------------------------------------
+%%% @author  : Joq Erlang
+%%% @doc: : 
+%%%  
+%%% Created : 10 dec 2012
+%%% -------------------------------------------------------------------
+-module(twin). 
+ 
+
+-export([loop/1	]).
+
+
+%% ====================================================================
+%% External functions
+%% ====================================================================
+
+%@doc, spec etc
+
+loop(NodeInfo)->
+    receive
+	{Parent,test}
+    Pid=spawn_link(twin,loop,[]),
+    register(TwinId,Pid).
+
+read_conf(Dir)->
+    {ok,Files}=file:list_dir(Dir),
+    FileNames=[filename:join(Dir,File)||File<-Files,
+					".config"==filename:extension(File)],
+    {ConfigList,ErrorList}=do_config_list(FileNames,[],[]),
+    {ConfigList,ErrorList}.
+					
+
+do_config_list([],ConfigList,ErrorList)->
+    {ConfigList,ErrorList};
+do_config_list([FileName|T],Acc1,Acc2) ->
+    {NewAcc1,NewAcc2}=case file:consult(FileName) of
+			  {ok,Info}->
+			      {[Info|Acc1],Acc2};
+			  Err->
+			      {Acc1,[Err|Acc2]}
+		      end,
+    do_config_list(T,NewAcc1,NewAcc2).
+	    

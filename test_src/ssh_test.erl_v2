@@ -1,0 +1,218 @@
+%%% -------------------------------------------------------------------
+%%% Author  : uabjle
+%%% Description : dbase using dets 
+%%% 
+%%% Created : 10 dec 2012
+%%% -------------------------------------------------------------------
+-module(ssh_test).  
+     
+%% --------------------------------------------------------------------
+%% Include files
+%% --------------------------------------------------------------------
+-include_lib("eunit/include/eunit.hrl").
+-include("log.hrl").
+
+-define(VM1,'node1@asus').
+%% --------------------------------------------------------------------
+-export([start/0]).
+
+%% ====================================================================
+%% External functions
+%% ====================================================================
+
+%% --------------------------------------------------------------------
+%% Function:emulate loader
+%% Description: requires pod+container module
+%% Returns: non
+%% --------------------------------------------------------------------
+start()->
+    ?debugMsg("read_conf"),
+    read_conf(),
+    ?debugMsg("read2"),
+    read2(),
+    ?debugMsg("start ssh"),
+    start_ssh(),
+    ?debugMsg("ssh1"),
+    ssh1(),
+
+    ?debugMsg("status node"),
+    node1(),
+    ?debugMsg("load start"),
+    load_start(),
+  %  all(),
+ %   error(),
+ %   event(),    
+    ok.
+
+
+
+ 
+%% --------------------------------------------------------------------
+%% Function:start/0 
+%% Description: Initiate the eunit tests, set upp needed processes etc
+%% Returns: non
+%% -------------------------------------------------------------------
+node1()->
+    %% start node
+    rpc:call('10250@asus',init,stop,[]),
+    {ConfigInfo,_Error}=node_lib:read_conf_all("test_src/node_config"),    
+    Info=conf_info(ConfigInfo,"asus",[]),
+    {ip_addr,Ip}=lists:keyfind(ip_addr,1,Info),
+    {ssh_port,Port}=lists:keyfind(ssh_port,1,Info),
+    {ssh_user,User}=lists:keyfind(ssh_user,1,Info),
+    {ssh_passwd,PassWd}=lists:keyfind(ssh_passwd,1,Info),
+    {ok,ConRef,ChanId}=my_ssh:ssh_connect(Ip,Port,User,PassWd),
+    ?debugMsg("ok ssh_connect(Ip,Port,User,PassWd) "),
+    ?assertMatch(["na"],my_ssh:ssh_send(ConRef,ChanId,"erl -sname 10250 -setcookie abc -detached ")),
+    timer:sleep(2000),
+    ?assertMatch(pong,net_adm:ping('10250@asus')),
+    %% Node started 
+    ?assertMatch({unknown,_},node_lib:check_status("asus","test_src/node_config",10000)),    
+    ?debugMsg("ok node_config"),
+    ?assertMatch({unknown,ehostunreach},node_lib:check_status("asus","test_src/wrong_ip",10000)),    
+    ?debugMsg("ok wrong_ip"),
+    ?assertMatch({unknown,econnrefused},node_lib:check_status("asus","test_src/wrong_port",10000)),  
+    ?debugMsg("ok wrong_port"),
+    ?assertMatch({unknown,"Unable to connect using the available authentication methods"},node_lib:check_status("asus","test_src/wrong_user",10000)),  
+    ?debugMsg("ok wrong_user"),    
+    ?assertMatch({unknown,"Unable to connect using the available authentication methods"},node_lib:check_status("asus","test_src/wrong_passwd",10000)),    
+    ?debugMsg("ok wrong_passwd"),
+    %%
+    {ok, ChannelPid, _Connection} = ssh_sftp:start_channel("192.168.0.100",60122, [{user,"pi"},{password,"festum01"}]),
+    ssh_sftp:del_dir(ChannelPid,"glurk"),
+    ?assertMatch(ok,ssh_sftp:make_dir(ChannelPid,"glurk")),
+    ?assertMatch({ok,[".",".."]},ssh_sftp:list_dir(ChannelPid,"glurk")),
+    ?assertMatch(ok,ssh_sftp:del_dir(ChannelPid,"glurk")),
+    ?assertMatch({error,no_such_file},ssh_sftp:list_dir(ChannelPid,"glurk")),
+    ?assertMatch(ok,ssh_sftp:stop_channel(ChannelPid)),
+    rpc:call('10250@asus',init,stop,[]),
+    ok.
+
+load_start()->
+    {ConfigInfo,_Error}=node_lib:read_conf_all("test_src/node_config"),    
+    Info=conf_info(ConfigInfo,"asus",[]),
+    {ip_addr,Ip}=lists:keyfind(ip_addr,1,Info),
+    {ssh_port,Port}=lists:keyfind(ssh_port,1,Info),
+    {ssh_user,User}=lists:keyfind(ssh_user,1,Info),
+    {ssh_passwd,PassWd}=lists:keyfind(ssh_passwd,1,Info),
+    {host,Host}=lists:keyfind(host,1,Info),
+    {vm_id,VmId}=lists:keyfind(vm_id,1,Info),
+
+    ServiceId="adder_service",
+    Vm=list_to_atom(VmId++"@"++Host),
+    rpc:call(Vm,init,stop,[]),
+    {ok,ConRef,ChanId}=my_ssh:ssh_connect(Ip,Port,User,PassWd),
+    %{ok, ChannelPid, _Connection} = ssh_sftp:start_channel(Ip,Port, [{user,User},{password,PassWd}]),
+
+    %%% Assum it's running
+
+ %   ?assertMatch(["na"],my_ssh:ssh_send(ConRef,ChanId,"rm -rf "++VmId++" erl_crasch.dump")),
+  %  io:format("~p~n",[{?MODULE,?LINE,ssh_sftp:del_dir(ChannelPid,VmId)}]),
+  %  io:format("~p~n",[{?MODULE,?LINE,ssh_sftp:del_dir(ChannelPid,"erl_crasch.dump")}]),
+    ?debugMsg("rm -rf "++VmId++" erl_crasch.dump"),
+    timer:sleep(200),
+    io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(ConRef,ChanId,"mkdir "++VmId)}]),
+    
+   % ?assertMatch(ok,ssh_sftp:make_dir(ChannelPid,VmId)),
+   % ?assertMatch({ok,[".",".."]},ssh_sftp:list_dir(ChannelPid,VmId)),
+    ?debugMsg("list_dir(ChannelPid,VmId"),
+  %  
+    timer:sleep(200),
+    io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(ConRef,ChanId,"pwd ")}]),
+  % ?assertMatch(ok,my_ssh:close(ConRef)),
+    io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(ConRef,ChanId,"git clone https://joq62:20Qazxsw20@github.com/joq62/include.git "++VmId)}]),
+    ?debugMsg("clone include"),
+    timer:sleep(1000),
+    my_ssh:close(ConRef),
+     {ok,ConRef1,ChanId1}=my_ssh:ssh_connect(Ip,Port,User,PassWd),
+    io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(ConRef1,ChanId1,"git clone https://joq62:20Qazxsw20@github.com/joq62/"++ServiceId++".git "++VmId)}]),
+%    io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(ConRef,ChanId,"git clone https://joq62:20Qazxsw20@github.com/joq62/adder_service.git "++VmId)}]),
+    ?debugMsg("clone ServiceId"),
+    timer:sleep(200),
+    io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(ConRef,ChanId,"cp "++VmId++"/src/"++ServiceId++".app "++VmId++"/ebin")}]),
+    timer:sleep(200),
+    io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(ConRef,ChanId,"erlc -I "++VmId++"/include -o "++VmId++"/ebin "++VmId++"/src/*.erl")}]),
+    timer:sleep(200),
+    
+    io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(ConRef,ChanId,"erl -sname "++VmId++" -setcookie abc -detached ")}]),
+    timer:sleep(2000),
+    ?assertMatch(pong,net_adm:ping(Vm)),
+ %   ?assertMatch(ok,ssh_sftp:stop_channel(ChannelPid)),  
+    ?assertMatch(ok,my_ssh:close(ConRef)),
+    rpc:call(Vm,init,stop,[]),
+    ok.
+    
+
+
+%% --------------------------------------------------------------------
+%% Function:start/0 
+%% Description: Initiate the eunit tests, set upp needed processes etc
+%% Returns: non
+%% -------------------------------------------------------------------
+
+start_ssh()->
+       my_ssh:start().
+
+ssh1()->
+    {ConfigInfo,_Error}=node_lib:read_conf_all("test_src/node_config"),    
+    Info=conf_info(ConfigInfo,"asus",[]),
+    {ip_addr,Ip}=lists:keyfind(ip_addr,1,Info),
+    ?assertMatch("192.168.0.100",Ip),
+    {ssh_port,Port}=lists:keyfind(ssh_port,1,Info),
+    ?assertMatch(60122,Port),
+    {ssh_user,User}=lists:keyfind(ssh_user,1,Info),
+    ?assertMatch("pi",User),
+    {ssh_passwd,PassWd}=lists:keyfind(ssh_passwd,1,Info),
+    ?assertMatch("festum01",PassWd),
+    {ok,ConRef,ChanId}=my_ssh:ssh_connect(Ip,Port,User,PassWd),
+    ?assertMatch(["/home/pi"],my_ssh:ssh_send(ConRef,ChanId,"pwd")),
+    ?assertMatch(ok,my_ssh:close(ConRef)),
+    ok.
+
+
+%% --------------------------------------------------------------------
+%% Function:start/0 
+%% Description: Initiate the eunit tests, set upp needed processes etc
+%% Returns: non
+%% -------------------------------------------------------------------
+read_conf()->
+    {ConfigInfo,Error}=node_lib:read_conf_all("test_src/node_config"),
+ 
+    ?assertMatch([[{kind,node},{api_version,"1.0.0"},{ip_addr,"192.168.0.100"},{ssh_port,60122},
+		   {ssh_user,"pi"},{ssh_passwd,"festum01"},{vm_id,"10250"},{host,"asus"},{capability,[]}],
+		  [{kind,node},{api_version,"1.0.0"},{ip_addr,"192.168.0.110"},{ssh_port,60110},
+		   {ssh_user,"pi"},{ssh_passwd,"festum01"},{vm_id,"10250"},{host,"computer1"},{capability,[{tellsticvk,[]}]}]],ConfigInfo),
+    
+    ?assertMatch(["test_src/node_config/error.config",{error,{_,erl_parse,["syntax error before: ","'.'"]}}],Error),
+    ok.
+    
+read2()->
+    {ConfigInfo,_Error}=node_lib:read_conf_all("test_src/node_config"),
+    H1=[lists:keyfind(host,1,L)||L<-ConfigInfo],
+    Hosts=[HostId||{host,HostId}<-H1],
+    ?assertMatch(["asus","computer1"],Hosts),    
+
+    % ssh_info
+     ?assertMatch([],conf_info(ConfigInfo,"glurk",[])),
+    ?assertMatch([{kind,node},{api_version,"1.0.0"},{ip_addr,"192.168.0.100"},{ssh_port,60122},
+		   {ssh_user,"pi"},{ssh_passwd,"festum01"},{vm_id,"10250"},{host,"asus"},{capability,[]}],conf_info(ConfigInfo,"asus",[])),
+    
+    ok.
+
+
+conf_info([],_HostId,Config)->
+    Config;
+
+conf_info([Config|T],HostId,Acc)->
+    case {host,HostId}==lists:keyfind(host,1,Config) of
+	true->
+	    NewAcc=Config,
+	    NewT=[];
+	false->
+	    NewAcc=Acc,
+	    NewT=T
+    end,
+    conf_info(NewT,HostId,NewAcc).
+
+
+

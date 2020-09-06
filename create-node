@@ -1,0 +1,6 @@
+Usecase: Check computer status (running,re-started,faulty ,unknown)
+   running: contact + vm_service is available
+   re-started: contact but vm_service not running
+   faulty/unknown: TBD
+
+2.1 

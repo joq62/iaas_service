@@ -4,7 +4,7 @@
 %%%
 %%% Created : 10 dec 2012
 %%% -------------------------------------------------------------------
--module(iaas_service_sup). 
+-module(node_service_sup). 
 
 -behaviour(supervisor).
 %% --------------------------------------------------------------------
@@ -51,7 +51,7 @@ start_link(Args)->
 %% --------------------------------------------------------------------
 init(Args) ->
     {ok,{{one_for_one,5,10}, 
-	 [?CHILD(iaas_service,worker,Args)]}}.
+	 [?CHILD(node_service,worker,Args)]}}.
 
 %% ====================================================================
 %% Internal functions

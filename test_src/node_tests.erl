@@ -4,7 +4,7 @@
 %%% 
 %%% Created : 10 dec 2012
 %%% -------------------------------------------------------------------
--module(sd_service_tests).  
+-module(node_tests).  
    
 %% --------------------------------------------------------------------
 %% Include files
@@ -27,17 +27,14 @@
 %% Returns: non
 %% --------------------------------------------------------------------
 start()->
-    spawn(fun()->eunit:test({timeout,10*60,sd_service}) end).
-
-cases_test()->
     ?debugMsg("Test system setup"),
     ?assertEqual(ok,setup()),
 
     %% Start application tests
     
     
-    ?debugMsg("sd  test "),
-    ?assertEqual(ok,sd_test:start()),
+    ?debugMsg("node test "),
+    ?assertEqual(ok,ssh_test:start()),
 
 
     ?debugMsg("Start stop_test_system:start"),
@@ -52,18 +49,20 @@ cases_test()->
 %% Returns: non
 %% --------------------------------------------------------------------
 setup()->
-    rpc:call('node1@asus',application,stop,[sd_service]),
-    ?assertEqual(ok,rpc:call('node1@asus',application,start,[sd_service])),
+   ssh:start(),
+   % rpc:call('node1@asus',application,stop,[sd_service]),
+  %  ?assertEqual(ok,rpc:call('node1@asus',application,start,[sd_service])),
     %timer:sleep(200),	
     
-   ?assertEqual({pong,node1@asus,sd_service},rpc:call('node1@asus',sd_service,ping,[])),
-    ?assertEqual(ok,application:start(sd_service)),
+  % ?assertEqual({pong,node1@asus,sd_service},rpc:call('node1@asus',sd_service,ping,[])),
+  %  ?assertEqual(ok,application:start(sd_service)),
 
     ok.
 
 cleanup()->
-    application:stop(sd_service),
-    rpc:call('node1@asus',init,stop,[]),
+    ssh:stop(),
+   % application:stop(sd_service),
+   % rpc:call('node1@asus',init,stop,[]),
     init:stop().
 
 
