@@ -35,7 +35,7 @@ check_status(HostId,ConfigDir,TimeOut)->
     {ConfigInfo,_Error}=node_lib:read_conf_all(ConfigDir),    
     Status = case conf_info(ConfigInfo,HostId,[]) of
 		 []->
-		     unknown;
+		     {error,eexists,HostId};
 		 Info->
 		     {ip_addr,Ip}=lists:keyfind(ip_addr,1,Info),
 		     {ssh_port,Port}=lists:keyfind(ssh_port,1,Info),

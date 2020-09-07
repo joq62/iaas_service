@@ -45,14 +45,13 @@ ssh_connect(Ip,Port,User,Password,TimeOut)->
 send(ConRef,ChanId,Msg,TimeOut)->
     ssh_connection:exec(ConRef,ChanId,Msg,TimeOut),
 %    R=rec(<<"na">>),
- %   Reply=case rec(ConRef,ChanId,TimeOut,no_msg,false) of
-    Reply=case rec(ConRef,ChanId,TimeOut) of
-	      {closed,R}->
-		  io:format("~p~n",[{?MODULE,?LINE,closed,R}]);
-	      {eof,R}->
-		  io:format("~p~n",[{?MODULE,?LINE,eof,R}]);
-	      {exit,R}->
-		  io:format("~p~n",[{?MODULE,?LINE,exit,R}]);
+    Reply=case rec(ConRef,ChanId,TimeOut,no_msg,false) of
+	      {ok,closed}->
+		  io:format("~p~n",[{?MODULE,?LINE,closed}]);
+	      {ok,eof}->
+		  io:format("~p~n",[{?MODULE,?LINE,eof}]);
+	      {ok,exit}->
+		  io:format("~p~n",[{?MODULE,?LINE,exit}]);
 	      {error,Err}->
 		  io:format("~p~n",[{?MODULE,?LINE,error,Err}]);
 	      no_msg->
@@ -63,31 +62,6 @@ send(ConRef,ChanId,Msg,TimeOut)->
 	  end,
     Reply.
     
-rec(ConRef,ChanId,TimeOut)->
-    Reply=receive
-	      {ssh_cm, ConnectionRef, {data, ChannelId, Type, Result}} when Type == 0 ->
-		  {ok,Result};
-	      {ssh_cm, ConnectionRef, {data, ChannelId, Type, Result}} when Type == 1 ->
-		  {error,Result}
-						%	{ssh_cm,_,{eof,0}}->
-						%	    NewResult={eof,Result},
-%	    Quit=false; 
-%	{ssh_cm,_,{exit_status,0,0}}->
-%	    NewResult={exit,Result},
-%	    Quit=true;
-%	{ssh_cm,_,{closed,0}}->
-%	    NewResult={closed,Result},
-%	    Quit=true 
-	%Err->
-	  %  {ssh_cm, ConnectionRef, {data, ChannelId, Type, Result_1}}=Err,
-	   % NewResult={ok,Result_1},
-	 %   NewResult={error,Err,Result},
-	  %  Quit=true
-	  after TimeOut->
-		  {error,timeout}
-	  end,
-    Reply.
-
     
 
 rec(ConRef,_ChanId,_TimeOut,Result,true)->
@@ -96,18 +70,18 @@ rec(ConRef,ChanId,TimeOut,Result,false)->
     receive
 	{ssh_cm, ConnectionRef, {data, ChannelId, Type, Result}} when Type == 0 ->
 	    NewResult={ok,Result},
-	    Quit=true;
+	    Quit=false;
 	{ssh_cm, ConnectionRef, {data, ChannelId, Type, Result}} when Type == 1 ->
 	    NewResult={error,Result},
-	    Quit=true;
+	    Quit=false;
 	{ssh_cm,_,{eof,0}}->
-	    NewResult={eof,Result},
+	    NewResult=Result,
 	    Quit=false; 
 	{ssh_cm,_,{exit_status,0,0}}->
-	    NewResult={exit,Result},
-	    Quit=true;
+	    NewResult=Result,
+	    Quit=false;
 	{ssh_cm,_,{closed,0}}->
-	    NewResult={closed,Result},
+	    NewResult=Result,
 	    Quit=true 
 	%Err->
 	  %  {ssh_cm, ConnectionRef, {data, ChannelId, Type, Result_1}}=Err,
