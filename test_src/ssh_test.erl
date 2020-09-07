@@ -109,14 +109,14 @@ load_start()->
 %    io:format("~p~n",[{?MODULE,?LINE,ssh_sftp:del_dir(ChannelPid,VmId)}]),
  %   io:format("~p~n",[{?MODULE,?LINE,ssh_sftp:del_dir(ChannelPid,"erl_crasch.dump")}]),
     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"rm -rf "++VmId++" erl_crasch.dump include "++ServiceId,5000)}]),
-    timer:sleep(200),
+ %   timer:sleep(200),
     ?debugMsg("rm -rf "++VmId++" erl_crasch.dump"),
     
  %   ?assertMatch(ok,ssh_sftp:make_dir(ChannelPid,VmId)),
   %  ?assertMatch({ok,[".",".."]},ssh_sftp:list_dir(ChannelPid,VmId)),
     ?debugMsg("list_dir(ChannelPid,VmId"),
   %  
-    timer:sleep(200),
+  %  timer:sleep(200),
     ?assertMatch(["/home/pi"],my_ssh:ssh_send(Ip,Port,User,PassWd,"pwd",5000)),
 
 
@@ -129,24 +129,28 @@ load_start()->
 
 
     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"git clone https://joq62:20Qazxsw20@github.com/joq62/"++ServiceId++".git",5000)}]),
-    timer:sleep(1000),
+  %  timer:sleep(1000),
+ %   io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"mv "++ServiceId++" "++" "++VmId++"/"++ServiceId,5000)}]),
     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"cp -r "++ServiceId++"/*"++" "++VmId++"/"++ServiceId,5000)}]),
-    timer:sleep(200),
+  %  timer:sleep(200),
+    io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"rm -rf "++ServiceId,5000)}]),
+   % timer:sleep(200),
+    
     ?debugMsg("clone ServiceId"),
 
-%   io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"git clone https://joq62:20Qazxsw20@github.com/joq62/include.git",10000)}]),
-    io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"git clone https://github.com/joq62/include.git",5000)}]),
-    timer:sleep(1000),
+   io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"git clone https://joq62:20Qazxsw20@github.com/joq62/include.git",5000)}]),
+ %   io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"git clone https://github.com/joq62/include.git",5000)}]),
+  %  timer:sleep(1000),
     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"mv include "++VmId,5000)}]),
-    timer:sleep(200),
+  %  timer:sleep(200),
     ?debugMsg("clone include"),
   %  io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"ls "++VmId,10000)}]),
   %  ?debugMsg("ls "),
    % timer:sleep(200),
     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"cp "++VmId++"/"++ServiceId++"/src/"++ServiceId++".app "++VmId++"/"++ServiceId++"/ebin",5000)}]),
-    timer:sleep(200),
+  %  timer:sleep(200),
     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd, "erlc -o "++VmId++"/"++ServiceId++"/ebin "++VmId++"/"++ServiceId++"/src/*.erl",5000)}]),
-    timer:sleep(200),
+  %  timer:sleep(200),
     
     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"erl -pa "++VmId++"/"++ServiceId++"/ebin "++"-sname "++VmId++" -setcookie abc -detached ",5000)}]),
     timer:sleep(5000),

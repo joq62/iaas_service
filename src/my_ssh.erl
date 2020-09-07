@@ -11,6 +11,8 @@
 -export([start/0,close/1,ssh_send/6,ssh_connect/5]).
 -author('joq erlang').
 
+-define(DELAY,2000).
+
 start()->
     ssh:start().
 
@@ -25,6 +27,7 @@ ssh_send(Ip,Port,User,Password,Msg,TimeOut)->
 	    Reply=send(ConRef,ChanId,Msg,TimeOut),
 	    ssh:close(ConRef)
     end,
+    timer:sleep(?DELAY),
     Reply.
 
 ssh_connect(Ip,Port,User,Password,TimeOut)->
