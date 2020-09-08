@@ -33,10 +33,10 @@ start()->
     ?debugMsg("start ssh"),
     start_ssh(),
     ?debugMsg("ssh1"),
-    ssh1(),
+ %   ssh1(),
 
     ?debugMsg("status node"),
-    node1(),
+ %   node1(),
     ?debugMsg("load start"),
     load_start(),
   %  all(),
@@ -151,7 +151,8 @@ load_start()->
   %  timer:sleep(200),
     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd, "erlc -o "++VmId++"/"++ServiceId++"/ebin "++VmId++"/"++ServiceId++"/src/*.erl",5000)}]),
   %  timer:sleep(200),
-    
+%     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"cd "++VmId,5000)}]),
+%    io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"erl -pa */ebin "++"-sname "++VmId++" -setcookie abc -detached ",5000)}]),  
     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"erl -pa "++VmId++"/"++ServiceId++"/ebin "++"-sname "++VmId++" -setcookie abc -detached ",5000)}]),
     timer:sleep(5000),
     ?assertMatch(pong,net_adm:ping(Vm)),
