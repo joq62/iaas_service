@@ -33,11 +33,11 @@ start()->
     %% Start application tests
     
     
-  %  ?debugMsg("ssh test "),
-  %  ?assertEqual(ok,ssh_test:start()),
+    ?debugMsg("ssh test "),
+    ?assertEqual(ok,ssh_test:start()),
     
     ?debugMsg("node test "),
-    ?assertEqual(ok,node_test:start()),
+    ?assertEqual(ok,node_test:start(2)),
 
 
     ?debugMsg("Start stop_test_system:start"),

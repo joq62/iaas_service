@@ -51,15 +51,20 @@ send(ConRef,ChanId,Msg,TimeOut)->
  %   Reply=case rec(ConRef,ChanId,TimeOut,no_msg,false) of
     Reply=case rec(ConRef,ChanId,TimeOut) of
 	      {closed,R}->
-		  io:format("~p~n",[{?MODULE,?LINE,closed,R}]);
+		  %io:format("~p~n",[{?MODULE,?LINE,closed,R}])
+		  ok;
 	      {eof,R}->
-		  io:format("~p~n",[{?MODULE,?LINE,eof,R}]);
+		%io:format("~p~n",[{?MODULE,?LINE,eof,R}]);
+		  ok;
 	      {exit,R}->
-		  io:format("~p~n",[{?MODULE,?LINE,exit,R}]);
+		 % io:format("~p~n",[{?MODULE,?LINE,exit,R}]);
+		  ok;
 	      {error,Err}->
-		  io:format("~p~n",[{?MODULE,?LINE,error,Err}]);
+		  %io:format("~p~n",[{?MODULE,?LINE,error,Err}]);
+		  ok;
 	      no_msg->
-		  io:format("~p~n",[{?MODULE,?LINE,no_msg}]);
+		 % io:format("~p~n",[{?MODULE,?LINE,no_msg}]);
+		  ok;
 	      {ok,Result}->
 		  X1=binary_to_list(Result),
 		  string:tokens(X1,"\n")
@@ -68,24 +73,10 @@ send(ConRef,ChanId,Msg,TimeOut)->
     
 rec(ConRef,ChanId,TimeOut)->
     Reply=receive
-	      {ssh_cm, ConnectionRef, {data, ChannelId, Type, Result}} when Type == 0 ->
+	      {ssh_cm, ConRef, {data, ChanId, Type, Result}} when Type == 0 ->
 		  {ok,Result};
-	      {ssh_cm, ConnectionRef, {data, ChannelId, Type, Result}} when Type == 1 ->
+	      {ssh_cm, ConRef, {data, ChanId, Type, Result}} when Type == 1 ->
 		  {error,Result}
-						%	{ssh_cm,_,{eof,0}}->
-						%	    NewResult={eof,Result},
-%	    Quit=false; 
-%	{ssh_cm,_,{exit_status,0,0}}->
-%	    NewResult={exit,Result},
-%	    Quit=true;
-%	{ssh_cm,_,{closed,0}}->
-%	    NewResult={closed,Result},
-%	    Quit=true 
-	%Err->
-	  %  {ssh_cm, ConnectionRef, {data, ChannelId, Type, Result_1}}=Err,
-	   % NewResult={ok,Result_1},
-	 %   NewResult={error,Err,Result},
-	  %  Quit=true
 	  after TimeOut->
 		  {error,timeout}
 	  end,

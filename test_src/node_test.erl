@@ -14,7 +14,7 @@
 
 -define(VM1,'node1@asus').
 %% --------------------------------------------------------------------
--export([start/0]).
+-export([start/1]).
 
 %% ====================================================================
 %% External functions
@@ -25,9 +25,9 @@
 %% Description: requires pod+container module
 %% Returns: non
 %% --------------------------------------------------------------------
-start()->
+start(N)->
     ?debugMsg("status all"),
-    status_all(),
+    status_all(N),
   %  all(),
  %   error(),
  %   event(),    
@@ -41,7 +41,11 @@ start()->
 %% Description: Initiate the eunit tests, set upp needed processes etc
 %% Returns: non
 %% -------------------------------------------------------------------
-status_all()->
+status_all(0)->
+    ok;
+status_all(N)->
+    ?debugMsg("status all"),
+    io:format("~p~n",[{?MODULE,?LINE,N}]),
     io:format("~p~n",[{?MODULE,?LINE,rpc:call('10250@sthlm_1',init,stop,[])}]),
     timer:sleep(1000),
     ?assertMatch([{_,{nodedown,[]}},{_,{nodedown,[]}}],node_lib:check_status_all("test_src/node_config")),    
@@ -51,7 +55,7 @@ status_all()->
     
     ?assertMatch(pong,net_adm:ping('10250@sthlm_1')),
    
-    ok.
+    status_all(N-1).
 
 
 

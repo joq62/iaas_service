@@ -40,10 +40,13 @@ start_node(Config)->
 		 pong->
 		     {error,[already_started,HostId]};
 		 pang ->
-		     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"rm -rf "++VmId++" erl_crasch.dump include ",5000)}]),
-		     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"mkdir "++VmId,5000)}]),
-		     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"erl -pa "++VmId++"/*"++"/ebin "++"-sname "++VmId++" -setcookie abc -detached ",5000)}]),
-		     check_started(10,Vm,500,{error,[Vm]});
+		 %    io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"rm -rf "++VmId++" erl_crasch.dump include ",5000)}]),
+		 %    io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"mkdir "++VmId,5000)}]),
+		  %   io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"erl -pa "++VmId++"/*"++"/ebin "++"-sname "++VmId++" -setcookie abc -detached ",5000)}]),
+		     ok=my_ssh:ssh_send(Ip,Port,User,PassWd,"rm -rf "++VmId++" erl_crasch.dump include ",500),
+		     ok=my_ssh:ssh_send(Ip,Port,User,PassWd,"mkdir "++VmId,500),
+		     ok=my_ssh:ssh_send(Ip,Port,User,PassWd,"erl -pa "++VmId++"/*"++"/ebin "++"-sname "++VmId++" -setcookie abc -detached ",5000),
+		     check_started(500,Vm,100,{error,[Vm]});
 		 Err ->
 		     {error,[Err,HostId]}
 	     end,
