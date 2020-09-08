@@ -45,7 +45,9 @@ status_all()->
     io:format("~p~n",[{?MODULE,?LINE,rpc:call('10250@sthlm_1',init,stop,[])}]),
     timer:sleep(1000),
     ?assertMatch([{_,{nodedown,[]}},{_,{nodedown,[]}}],node_lib:check_status_all("test_src/node_config")),    
-    ?assertMatch(ok,node_lib:start_node("vm_service","sthlm_1","test_src/node_config")),    
+    ?assertMatch(ok,node_lib:start_node("sthlm_1","test_src/node_config")),    
+
+    ?assertMatch( {error,[already_started,"sthlm_1"]},node_lib:start_node("sthlm_1","test_src/node_config")),    
     
     ?assertMatch(pong,net_adm:ping('10250@sthlm_1')),
    
