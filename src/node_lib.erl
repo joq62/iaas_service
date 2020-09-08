@@ -52,7 +52,7 @@ start_node(Config)->
 	     end,
     Result.
 
-check_started(N,_Vm,_Timer,ok)->
+check_started(_N,_Vm,_Timer,ok)->
     ok;
 check_started(0,_Vm,_Timer,Result)->
     Result;

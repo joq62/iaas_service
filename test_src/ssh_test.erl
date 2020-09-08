@@ -33,15 +33,13 @@ start()->
     ?debugMsg("start ssh"),
     start_ssh(),
     ?debugMsg("ssh1"),
- %   ssh1(),
+    ssh1(),
 
     ?debugMsg("status node"),
- %   node1(),
+    node1(),
     ?debugMsg("load start"),
     load_start(),
-  %  all(),
- %   error(),
- %   event(),    
+ 
     ok.
 
 
