@@ -6,17 +6,71 @@
 %%% -------------------------------------------------------------------
 -module(node_lib). 
  
+-define(TIMEOUT,5000).
 
 -export([read_conf_all/1,
 	 check_status_all/1,
-	 check_status/2,
-	 check_status/3
+	 check_status/3,
+	 start_node/3
 	]).
 
 
 %% ====================================================================
 %% External functions
 %% ====================================================================
+start_node(NodeService,HostId,ConfigDir)->
+    {ConfigInfo,_Error}=node_lib:read_conf_all(ConfigDir),    
+    Result = case conf_info(ConfigInfo,HostId,[]) of
+		 []->
+		     {error,eexists,HostId};
+		 Config->
+		     start_node(NodeService,Config)
+	     end,
+    Result.
+start_node(ServiceId,Config)->
+    {ip_addr,Ip}=lists:keyfind(ip_addr,1,Config),
+    {ssh_port,Port}=lists:keyfind(ssh_port,1,Config),
+    {ssh_user,User}=lists:keyfind(ssh_user,1,Config),
+    {ssh_passwd,PassWd}=lists:keyfind(ssh_passwd,1,Config),
+    {vm_id,VmId}=lists:keyfind(vm_id,1,Config),
+    {host,HostId}=lists:keyfind(host,1,Config),
+
+    Vm=list_to_atom(VmId++"@"++HostId),
+    Result = case net_adm:ping(Vm) of
+		 pong->
+		     {error,[already_started,HostId]};
+		 pang ->
+		     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"rm -rf "++VmId++" erl_crasch.dump include "++ServiceId,5000)}]),
+		     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"mkdir "++VmId,5000)}]),
+	%	     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"mkdir "++VmId++"/"++ServiceId,5000)}]),
+		     % Clone Service
+	%	     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"git clone https://joq62:20Qazxsw20@github.com/joq62/"++ServiceId++".git",5000)}]),
+	%	     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"cp -r "++ServiceId++"/*"++" "++VmId++"/"++ServiceId,5000)}]),
+	%	     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"cp "++VmId++"/"++ServiceId++"/src/"++ServiceId++".app "++VmId++"/"++ServiceId++"/ebin",5000)}]),	 
+	%	     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"rm -rf "++ServiceId,5000)}]),
+		     % Clone include 
+	%	     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"git clone https://joq62:20Qazxsw20@github.com/joq62/include.git",5000)}]),
+	%	     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"mv include "++VmId,5000)}]),
+		       
+	%	     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd, "erlc -o "++VmId++"/"++ServiceId++"/ebin "++VmId++"/"++ServiceId++"/src/*.erl",5000)}]),    
+	%	     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"erl -pa "++VmId++"/"++ServiceId++"/ebin "++"-sname "++VmId++" -setcookie abc -detached ",5000)}]),
+
+		     io:format("~p~n",[{?MODULE,?LINE,my_ssh:ssh_send(Ip,Port,User,PassWd,"erl -pa "++VmId++"/*"++"/ebin "++"-sname "++VmId++" -setcookie abc -detached ",5000)}]),
+		     timer:sleep(5000),
+		     case net_adm:ping(Vm) of
+			 pong->
+			     ok;
+			 Err->
+			     {error,[Err,HostId]}
+		     end;
+		 Err ->
+		     {error,[Err,HostId]}
+	     end,
+    Result.
+
+do_start()->
+   
+    ok.
 
 %@doc, spec etc
 %% --------------------------------------------------------------------
@@ -29,81 +83,61 @@
 %
 %% --------------------------------------------------------------------
 check_status_all(ConfigDir)->
-    {glurk,ConfigDir}.
+    {ConfigInfo,_Error}=node_lib:read_conf_all(ConfigDir),
+    StatusAll=check_status_all(ConfigInfo,?TIMEOUT,[]),
+    StatusAll.
+ 
+check_status_all([],_,StatusAll)->
+    StatusAll;
+check_status_all([Config|T],TimeOut,Acc)->
+    {host,HostId}=lists:keyfind(host,1,Config),
+    Status=check_node(Config,TimeOut),
+    check_status_all(T,TimeOut,[{HostId,Status}|Acc]).
+	
+
 
 check_status(HostId,ConfigDir,TimeOut)->
     {ConfigInfo,_Error}=node_lib:read_conf_all(ConfigDir),    
     Status = case conf_info(ConfigInfo,HostId,[]) of
 		 []->
 		     {error,eexists,HostId};
-		 Info->
-		     {ip_addr,Ip}=lists:keyfind(ip_addr,1,Info),
-		     {ssh_port,Port}=lists:keyfind(ssh_port,1,Info),
-		     {ssh_user,User}=lists:keyfind(ssh_user,1,Info),
-		     {ssh_passwd,PassWd}=lists:keyfind(ssh_passwd,1,Info),
-		     case my_ssh:ssh_connect(Ip,Port,User,PassWd,TimeOut) of
-			 {ok,ConRef,_ChanId}->
-			     Vm=list_to_atom("10250@"++HostId),
-			     case rpc:call(Vm,vm_service,ping,[]) of
-				 {pong,Vm,vm_service}->
-				     my_ssh:close(ConRef),
-				     {running,[]};
-				 {badrpc,nodedown}->
-				     my_ssh:close(ConRef),
-				     {nodedown,[]};
-				 {badrpc,{'EXIT',{undef,Err}}}->
-				     my_ssh:close(ConRef),
-				     {unknown,{'EXIT',{undef,Err}}};
-				 Err ->
-				     {unknown,Err}
-			     end;
-			 {error,ehostunreach} ->
-			     {unknown,ehostunreach};
-			 {error,econnrefused} ->
-			     {unknown,econnrefused};
-			 {error,Err}->
-			     {unknown,Err};
-			 Error ->
-			     {unknown,Error}
-		     end
+		 Config->
+		     check_node(Config,TimeOut)
 	     end,
     Status.
-check_status(HostId,ConfigDir)->
-    {ConfigInfo,_Error}=node_lib:read_conf_all(ConfigDir),    
-    Status = case conf_info(ConfigInfo,HostId,[]) of
-		 []->
-		     unknown;
-		 Info->
-		     {ip_addr,Ip}=lists:keyfind(ip_addr,1,Info),
-		     {ssh_port,Port}=lists:keyfind(ssh_port,1,Info),
-		     {ssh_user,User}=lists:keyfind(ssh_user,1,Info),
-		     {ssh_passwd,PassWd}=lists:keyfind(ssh_passwd,1,Info),
-		     case my_ssh:ssh_connect(Ip,Port,User,PassWd) of
-			 {ok,ConRef,_ChanId}->
-			     Vm=list_to_atom("10250@"++"HostId"),
-			     case rpc:call(Vm,vm_service,ping,[]) of
-				 {pong,Vm,vm_service}->
-				     my_ssh:close(ConRef),
-				     {running,[]};
-				 {badrpc,nodedown}->
-				     my_ssh:close(ConRef),
-				     {nodedown,[]};
-				 {badrpc,{'EXIT',{undef,Err}}}->
-				     my_ssh:close(ConRef),
-				     {unknown,{'EXIT',{undef,Err}}};
-				 Err ->
-				     {unknown,Err}
-			     end;
-			 {error,ehostunreach} ->
-			     {unknown,ehostunreach};
-			 {error,econnrefused} ->
-			     {unknown,econnrefused};
-			 {error,Err}->
-			     {unknown,Err};
-			 Error ->
-			     {unknown,Error}
-		     end
-	     end,
+
+check_node(Info,TimeOut)->
+    {ip_addr,Ip}=lists:keyfind(ip_addr,1,Info),
+    {ssh_port,Port}=lists:keyfind(ssh_port,1,Info),
+    {ssh_user,User}=lists:keyfind(ssh_user,1,Info),
+    {ssh_passwd,PassWd}=lists:keyfind(ssh_passwd,1,Info),
+    {vm_id,VmId}=lists:keyfind(vm_id,1,Info),
+    {host,HostId}=lists:keyfind(host,1,Info),
+    Status=case my_ssh:ssh_connect(Ip,Port,User,PassWd,TimeOut) of
+	       {ok,ConRef,_ChanId}->
+		   Vm=list_to_atom(VmId++"@"++HostId),
+		   case rpc:call(Vm,vm_service,ping,[]) of
+		       {pong,Vm,vm_service}->
+			   my_ssh:close(ConRef),
+			   {running,[]};
+		       {badrpc,nodedown}->
+			   my_ssh:close(ConRef),
+			   {nodedown,[]};
+		       {badrpc,{'EXIT',{undef,Err}}}->
+			   my_ssh:close(ConRef),
+			   {unknown,{'EXIT',{undef,Err}}};
+		       Err ->
+			   {unknown,Err}
+		   end;
+	       {error,ehostunreach} ->
+		   {unknown,ehostunreach};
+	       {error,econnrefused} ->
+		   {unknown,econnrefused};
+	       {error,Err}->
+		   {unknown,Err};
+	       Error ->
+		   {unknown,Error}
+	   end,
     Status.
 
 
