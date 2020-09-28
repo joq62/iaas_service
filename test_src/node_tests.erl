@@ -31,16 +31,18 @@ start()->
     ?assertEqual(ok,setup()),
 
     %% Start application tests
-    
+
+ %   ?debugMsg("monitor test "),
+ %   ?assertEqual(ok,monitor_test:start()),    
     
     ?debugMsg("ssh test "),
     ?assertEqual(ok,ssh_test:start()),
     
-    ?debugMsg("node test "),
-    ?assertEqual(ok,node_test:start(2)),
+ %   ?debugMsg("node test "),
+ %   ?assertEqual(ok,node_test:start(2)),
 
 
-    ?debugMsg("Start stop_test_system:start"),
+%    ?debugMsg("Start stop_test_system:start"),
     %% End application tests
     cleanup(),
     ok.
@@ -54,7 +56,7 @@ start()->
 setup()->
    ssh:start(),
    % rpc:call('node1@asus',application,stop,[sd_service]),
-  %  ?assertEqual(ok,rpc:call('node1@asus',application,start,[sd_service])),
+   io:format("~p~n",[{?MODULE,?LINE,rpc:call('mnesia@asus',mnesia,start,[])}]),
     %timer:sleep(200),	
     
   % ?assertEqual({pong,node1@asus,sd_service},rpc:call('node1@asus',sd_service,ping,[])),
@@ -65,7 +67,7 @@ setup()->
 cleanup()->
     ssh:stop(),
    % application:stop(sd_service),
-   % rpc:call('node1@asus',init,stop,[]),
+    rpc:call('mnesia@asus',init,stop,[]),
     init:stop().
 
 

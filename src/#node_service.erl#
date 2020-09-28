@@ -2,8 +2,12 @@
 %%% @author  : Joq Erlang
 %%% @doc:
 %%% Detected started and restarted nodes
-%%% Stop Nodes 
-%%% Start control node (10250) after start or restart
+%%% Start and Stop Control and Worker Vms 
+%%% Start or restart
+%%% 1) Scratch computer except mnesia file
+%%% 2) Start mnesia vm  mnesia@host
+%%% 3) Start control vm 10250@host 
+%%% 
 %%% Add worker Nodes on request 30000-30030
 %%% 
 %%% Created : 10 dec 2012

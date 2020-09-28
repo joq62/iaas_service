@@ -11,10 +11,7 @@
 -export([read_conf_all/1,
 	 check_status_all/1,
 	 check_status/3,
-	 start_node/2,
-	 %for ssh_test
-	 check_started/4,
-	 check_stopped/4
+	 start_node/2
 	]).
 
 
@@ -69,20 +66,6 @@ check_started(N,Vm,Timer,_Result)->
 	      end,
     check_started(N-1,Vm,Timer,NewResult).
 
-check_stopped(_N,_Vm,_Timer,ok)->
-    ok;
-check_stopped(0,_Vm,_Timer,Result)->
-    Result;
-check_stopped(N,Vm,Timer,_Result)->
-    NewResult=case net_adm:ping(Vm) of
-		  pang->
-		      ok;
-		  Err->
-		      timer:sleep(Timer),
-		      {error,[Err,Vm]}
-	      end,
-    check_stopped(N-1,Vm,Timer,NewResult).
-
 %@doc, spec etc
 %% --------------------------------------------------------------------
 %% Function: 
@@ -128,10 +111,10 @@ check_node(Info,TimeOut)->
 	       {ok,ConRef,_ChanId}->
 		   Vm=list_to_atom(VmId++"@"++HostId),
 		   case rpc:call(Vm,vm_service,ping,[]) of
-		       {pong,Vm,vm_service}->
+		       {pong,Vm,vm_service}-> % Node running 
 			   my_ssh:close(ConRef),
 			   {running,[]};
-		       {badrpc,nodedown}->
+		       {badrpc,nodedown}-> %
 			   my_ssh:close(ConRef),
 			   {nodedown,[]};
 		       {badrpc,{'EXIT',{undef,Err}}}->
